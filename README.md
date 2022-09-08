@@ -9,7 +9,7 @@ This is the implementation of the sparse tensor decomposition algorithms from th
 If you use our code please cite our paper
 
 ```
-@article{ctill2021nest,
+@article{ctill2022sparsehdp,
 	title={Nonparametric Sparse Tensor Factorization with Hierarchical Gamma Processes}, 
 	author={Tillinghast, Conor and Wang, Zheng and Zhe, Shandian},
 	journal={Proceedings of the 39th International Conference on Machine Learning},
