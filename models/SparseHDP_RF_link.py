@@ -37,7 +37,7 @@ class SparseHDPLink:
         #gamma_r^k: K \times R_1, concentration parameter for each 2nd-level DP
         #self.log_gamma = torch.tensor(np.random.rand(self.nmod, self.R1), device=self.device, requires_grad=True)
         self.log_gamma = torch.tensor(np.zeros([self.nmod, self.R1]), device=self.device, requires_grad=True)
-        self.bn = torch.nn.BatchNorm1d(self.nmod*(self.R1+self.R2))
+        #self.bn = torch.nn.BatchNorm1d(self.nmod*(self.R1+self.R2))
         #locations/atoms in each mode
         self.theta = [torch.tensor(np.random.rand(self.nvec[k], self.R2), device=self.device, requires_grad=True) for k in range(self.nmod)]
         self.R = self.R1 + self.R2
@@ -158,17 +158,10 @@ class SparseHDPLink:
             pred_tr = self.pred(self.ind)
             err_tr = torch.mean(torch.square(pred_tr - self.y))
 
-            pred_link = self.pred_link(ind_link)
-            auc = roc_auc_score(yte_link>0,pred_link)
-            print('tau=%.5f, train_err = %.5f, test_auc = %.5f' %(tau, err_tr,auc))
+            print('tau=%.5f, train_err = %.5f' %(tau, err_tr))
             #with open('RF_NEST_HDP.txt','a') as f:
             #    f.write('%g '%err_te)
 
-    def get_auc(self, ind_link, yte_link):
-        with torch.no_grad():
-            pred_link = self.pred_link(ind_link)
-            auc = roc_auc_score(yte_link>0,pred_link)
-        return auc
 
 
     def train(self, ind_te, yte, lr, max_epochs=100):
@@ -234,12 +227,11 @@ def test_alog():
     lr = 0.001
     nepoch = 100
     R = 3
-    auc = []
     for k in range(nfold):
         U = [np.random.rand(200,7), np.random.rand(100,7), np.random.rand(200,7)]
         ind = []
         y = []
-        with open('../alog-pure/train-fold-%d.txt'%(k+1), 'r') as f:
+        with open('data/alog/train-fold-%d.txt'%(k+1), 'r') as f:
             for line in f:
                 items = line.strip().split(',')
                 y.append(float(items[-1]))
@@ -249,7 +241,7 @@ def test_alog():
 
         ind_test = []
         y_test = []
-        with open('../alog-link/test-fold-%d.txt'%(k+1), 'r') as f:
+        with open('data/alog/test-fold-%d.txt'%(k+1), 'r') as f:
             for line in f:
                 items = line.strip().split(',')
                 y_test.append(float(items[-1]))
@@ -261,10 +253,8 @@ def test_alog():
         nepoch = 200
         model = SparseHDPLink(ind, y, [200, 100, 200], R1, R2, m, batch_size, torch.device('cpu'))
         model.train(ind_test, y_test, lr, nepoch)
-        auc.append(model.get_auc(ind_test, y_test))
-    print(np.mean(auc))
-    print(np.std(auc))
 
 if __name__ == '__main__':
 
     torch.set_default_tensor_type(torch.DoubleTensor)
+    test_alog()

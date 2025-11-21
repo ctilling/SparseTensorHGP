@@ -35,6 +35,7 @@ class SparseTensorHDP:
         self.R = self.R1 + self.R2
         #dim. of frequencies
         self.d = self.nmod*self.R
+        # self.bn = torch.nn.BatchNorm1d(self.d)
         #init mu, L, Z
         self.Z = torch.tensor(np.random.rand(self.m, self.d), device=self.device, requires_grad=True)
         self.N = y.size
@@ -110,7 +111,7 @@ class SparseTensorHDP:
         U_omega = torch.cat([self.omega_hat[k][test_ind[:, k],:] for k in range(self.nmod)], 1)
         U_theta = torch.cat([torch.sigmoid(self.theta[k][test_ind[:, k],:]) for k in range(self.nmod)], 1)
         inputs = torch.cat([U_omega, U_theta], 1)
-        inputs = self.bn(inputs)
+        # inputs = self.bn(inputs)
         Phi = torch.matmul(inputs, self.Z.T)
         Phi = torch.cat([torch.cos(Phi), torch.sin(Phi)], 1) #B \times 2m
         pred_mean = torch.matmul(Phi, self.mu)
@@ -146,7 +147,7 @@ class SparseTensorHDP:
 
         minimizer = Adam(paras, lr=lr)
         for epoch in range(max_epochs):
-            self.bn.train()
+            # self.bn.train()
             curr = 0
             while curr < self.N:
                 batch_ind = np.random.choice(self.N, self.B, replace=False)
@@ -199,11 +200,14 @@ def test_alog():
     batch_size = 100
     lr = 0.001
     nepoch = 400
+    R1 = 7
+    R2 = 8
+    R = R1 + R2
     for k in range(nfold):
         U = [np.random.rand(200,R), np.random.rand(100,R), np.random.rand(200,R)]
         ind = []
         y = []
-        with open('../alog-pure/train-fold-%d.txt'%(k+1), 'r') as f:
+        with open('data/alog/train-fold-%d.txt'%(k+1), 'r') as f:
             for line in f:
                 items = line.strip().split(',')
                 y.append(float(items[-1]))
@@ -213,15 +217,13 @@ def test_alog():
 
         ind_test = []
         y_test = []
-        with open('../alog-pure/test-fold-%d.txt'%(k+1), 'r') as f:
+        with open('data/alog/test-fold-%d.txt'%(k+1), 'r') as f:
             for line in f:
                 items = line.strip().split(',')
                 y_test.append(float(items[-1]))
                 ind_test.append([int(idx)-1 for idx in items[0:-1]])
             ind_test = np.array(ind_test)
             y_test = np.array(y_test)
-        R1 = 7
-        R2 = 8
         nepoch = nepoch
         model = SparseTensorHDP(ind, y, [200, 100, 200], R1, R2, m, batch_size, torch.device('cpu'))
         model.train(ind_test, y_test, lr, nepoch)
